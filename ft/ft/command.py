@@ -1,6 +1,6 @@
 import sys
 import argparse
-from signal import signal, SIGPIPE, SIG_DFL
+import signal
 
 from functools import partial
 
@@ -22,14 +22,16 @@ class Command:
     @staticmethod
     def configure_broken_pipe():
         # Use the default behavior (exit quietly) when catching SIGPIPE
-        signal(SIGPIPE, SIG_DFL)
+        if hasattr(signal, 'SIGPIPE'):
+            signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     def get_argument_parser(self):
         parser = argparse.ArgumentParser(description=self.name)
-        parser.add_argument('function', help='the function to run for each input')
-        parser.add_argument('args', help='optional arguments', nargs='*')
-        parser.add_argument('--column', '-c', type=int,
-                            help='apply function to a specific column')
+        parser.add_argument("function", help="the function to run for each input")
+        parser.add_argument("args", help="optional arguments", nargs="*")
+        parser.add_argument(
+            "--column", "-c", type=int, help="apply function to a specific column"
+        )
 
         parser = self.add_command_arguments(parser)
 
@@ -38,13 +40,17 @@ class Command:
     def add_command_arguments(self, parser):
         return parser
 
+    def parse_additional_command_arguments(self, args):
+        pass
+
     def parse_args(self):
         parser = self.get_argument_parser()
 
         args = parser.parse_args()
-
         self.column = args.column
         self.arguments = args.args
+
+        self.parse_additional_command_arguments(args)
 
         function_name = args.function
         try:
@@ -71,7 +77,7 @@ class Command:
     def print_formatted(self, result):
         if result.value is not None:
             formatted = ftformat(result)
-            print(formatted)
+            print(formatted, flush=True)
 
     def handle_input(self, value):
         raise NotImplementedError
@@ -99,3 +105,7 @@ class Command:
                 break
 
         self.finalize()
+
+    @classmethod
+    def main(cls):
+        return cls().run()

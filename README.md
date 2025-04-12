@@ -1,6 +1,6 @@
 # shell-functools
 
-[![Build Status](https://travis-ci.org/sharkdp/shell-functools.svg?branch=master)](https://travis-ci.org/sharkdp/shell-functools)
+[![Unit tests](https://github.com/sharkdp/shell-functools/actions/workflows/ci.yml/badge.svg)](https://github.com/sharkdp/shell-functools/actions/workflows/ci.yml)
 
 *A collection of functional programming tools for the shell.*
 
@@ -17,6 +17,7 @@ arguments to these commands.
     * [Usage of `map`](#usage-of-map)
     * [Usage of `filter`](#usage-of-filter)
     * [Usage of `foldl`](#usage-of-foldl)
+    * [Usage of `foldl1`](#usage-of-foldl1)
     * [Usage of `sort_by`](#usage-of-sort_by)
     * [Chaining commands](#chaining-commands)
     * [Lazy evaluation](#lazy-evaluation)
@@ -32,12 +33,6 @@ arguments to these commands.
 If you want to try it out on your own, run:
 ``` bash
 pip install shell-functools
-```
-
-If you only want to try it out temporarily, you can also use:
-``` bash
-git clone https://github.com/sharkdp/shell-functools /tmp/shell-functools
-export PATH="$PATH:/tmp/shell-functools/ft"
 ```
 
 ## Documentation and examples
@@ -95,8 +90,18 @@ Multiply the numbers from 1 to 10:
 
 Append the numbers from 1 to 10 in a string:
 ``` bash
-> seq 1 10 | map append " " | foldl append ""
+> seq 10 | map append " " | foldl append ""
 1 2 3 4 5 6 7 8 9 10
+```
+
+### Usage of `foldl1`
+
+The `foldl1` command is a variant of `foldl` that uses the first input as the initial value.
+This can be used to shorten the example above to:
+``` bash
+> seq 100 | foldl1 add
+> seq 10 | foldl1 mul
+> seq 10 | map append " " | foldl1 append
 ```
 
 ### Usage of `sort_by`
@@ -106,19 +111,19 @@ background, it calls the function on each input line and uses the results to sor
 Consider the following scenario:
 ``` bash
 > ls
-document.txt  folder  image.jpg
+a.mp4  b.tar.gz  c.txt
 > ls | map filesize
-29
-4096
-69535
+7674860
+126138
+2214
 ```
 
 We can use the `filesize` function to sort the entries by size:
 ```
 > ls | sort_by filesize
-document.txt
-folder
-image.jpg
+c.txt
+b.tar.gz
+a.mp4
 ```
 
 ### Chaining commands
@@ -150,7 +155,7 @@ As an example, suppose we want to compute the sum of all odd squares lower than 
 have a command that prints the numbers from 1 to infinity (use `alias infinity="seq 999999999"` for
 an approximation), we can write:
 ``` bash
-> infinity | filter odd | map pow 2 | take_while less_than 10000 | foldl add 0
+> infinity | filter odd | map pow 2 | take_while less_than 10000 | foldl1 add
 166650
 ```
 
@@ -214,6 +219,7 @@ basename            :: Path   → Path
 is_dir              :: Path   → Bool
 is_file             :: Path   → Bool
 is_link             :: Path   → Bool
+is_executable       :: Path   → Bool
 exists              :: Path   → Bool
 has_ext ext         :: Path   → Bool
 strip_ext           :: Path   → String
@@ -230,6 +236,9 @@ nonempty            :: *      → Bool
 add num             :: Int    → Int
 sub num             :: Int    → Int
 mul num             :: Int    → Int
+even                :: Int    → Bool
+odd                 :: Int    → Bool
+pow num             :: Int    → Int
 ```
 #### Comparison operations ####
 ```
@@ -254,6 +263,7 @@ less_than i         :: Int    → Bool
 ```
 #### String operations ####
 ```
+reverse             :: String → String
 append suffix       :: String → String
 strip               :: String → String
 substr start end    :: String → String
@@ -268,8 +278,11 @@ duplicate           :: String → Array
 contains substring  :: String → Bool
 starts_with pattern :: String → Bool
 startswith pattern  :: String → Bool
+ends_with pattern   :: String → Bool
+endswith pattern    :: String → Bool
 len                 :: String → Int
 length              :: String → Int
+format format_str   :: *      → String
 ```
 #### Array operations ####
 ```
@@ -277,6 +290,7 @@ at idx              :: Array  → String
 index idx           :: Array  → String
 join separator      :: Array  → String
 split separator     :: String → Array
+reverse             :: Array  → Array
 ```
 #### Other operations ####
 ```

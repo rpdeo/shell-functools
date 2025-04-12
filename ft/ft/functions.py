@@ -2,8 +2,16 @@ import inspect
 import os
 import subprocess
 
-from ft.types import T_STRING, T_ARRAY, T_BOOL, T_PATH, T_INT, T_VOID, TypeConversionError, \
-    dynamic_cast
+from ft.types import (
+    T_STRING,
+    T_ARRAY,
+    T_BOOL,
+    T_PATH,
+    T_INT,
+    T_VOID,
+    TypeConversionError,
+    dynamic_cast,
+)
 from ft.internal import TypedValue, add_dynamic_type
 from ft.error import panic
 
@@ -32,8 +40,11 @@ def typed(type_in, type_out):
                 try:
                     inp = type_in.create_from(inp)
                 except TypeConversionError as e:
-                    panic("Incompatible input type: expected '{}', got '{}'".format(e.type_to,
-                                                                                    e.type_from))
+                    panic(
+                        "Incompatible input type: expected '{}', got '{}'".format(
+                            e.type_to, e.type_from
+                        )
+                    )
 
             if len(args) > 1:
                 result = fn(*args[0:-1], inp=inp.value)
@@ -49,11 +60,25 @@ def typed(type_in, type_out):
 
         fn_typecheck.type_in = type_in
         fn_typecheck.type_out = type_out
-        fn_typecheck.inner_argspec = inspect.getargspec(fn)
+        fn_typecheck.inner_argspec = inspect.getfullargspec(fn)
 
         return fn_typecheck
 
     return wrap
+
+
+@register("max")
+@typed(T_INT, T_INT)
+def max(value, inp):
+    v = dynamic_cast(T_INT, value).value
+    return inp if inp > v else v
+
+
+@register("min")
+@typed(T_INT, T_INT)
+def min(value, inp):
+    v = dynamic_cast(T_INT, value).value
+    return inp if inp < v else v
 
 
 @register("strip")
@@ -78,14 +103,14 @@ def prepend(prefix, inp):
 @typed(T_STRING, T_STRING)
 def take(count, inp):
     count = dynamic_cast(T_INT, count).value
-    return inp[0:int(count)]
+    return inp[0 : int(count)]
 
 
 @register("drop")
 @typed(T_STRING, T_STRING)
 def drop(count, inp):
     count = dynamic_cast(T_INT, count).value
-    return inp[int(count):]
+    return inp[int(count) :]
 
 
 @register("capitalize")
@@ -127,6 +152,13 @@ def replace(old, new, inp):
 def starts_with(pattern, inp):
     pattern = dynamic_cast(T_STRING, pattern).value
     return inp.startswith(pattern)
+
+
+@register("ends_with", "endswith")
+@typed(T_STRING, T_BOOL)
+def ends_with(pattern, inp):
+    pattern = dynamic_cast(T_STRING, pattern).value
+    return inp.endswith(pattern)
 
 
 @register("split")
@@ -315,6 +347,12 @@ def is_link(inp):
     return os.path.islink(inp)
 
 
+@register("is_executable")
+@typed(T_PATH, T_BOOL)
+def is_executable(inp):
+    return os.path.isfile(inp) and os.access(inp, os.X_OK)
+
+
 @register("contains")
 @typed(T_STRING, T_BOOL)
 def contains(substring, inp):
@@ -325,9 +363,9 @@ def contains(substring, inp):
 @register("nonempty", "non_empty")
 @typed(None, T_BOOL)
 def nonempty(inp):
-    if type(inp) == list:
+    if type(inp) is list:
         return bool(inp)
-    elif type(inp) == str:
+    elif type(inp) is str:
         return inp.strip() != ""
 
     return True
@@ -371,3 +409,34 @@ def less_than(i, inp):
 def less_equals(i, inp):
     i = dynamic_cast(T_INT, i).value
     return inp <= i
+
+
+@register("format")
+@typed(None, T_STRING)
+def format(format_str, inp):
+    try:
+        return format_str.value.format(inp)
+    except ValueError:
+        panic(
+            "Incorrect format string '{}' for input '{}'.".format(format_str.value, inp)
+        )
+
+
+@register("reverse")
+@typed(None, None)
+def reverse(inp):
+    # slice arrays and string from start to finish in reversed order
+    if type(inp) is str or type(inp) is list:
+        return inp[::-1]
+
+    # treat integers as strings
+    elif type(inp) is int:
+        return str(inp)[::-1]
+
+    # booleans can not be reversed
+    elif type(inp) is bool:
+        panic("Cannot reverse bool value")
+
+    # we got something unexpected
+    else:
+        panic("Unexpected type '{}' for input '{}'.".format(type(inp).__name__, inp))

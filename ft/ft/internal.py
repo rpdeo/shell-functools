@@ -15,13 +15,13 @@ def ftformat(val):
     if val.fttype == T_ARRAY:
         return "\t".join(map(ftformat, val.value))
     elif val.fttype == T_PATH:
-        return colored(val.value, 'cyan')
+        return colored(val.value, "cyan")
     elif val.fttype == T_STRING:
-        return colored(val.value, 'yellow')
+        return colored(val.value, "yellow")
     elif val.fttype == T_INT:
-        return colored(val.value, 'blue')
+        return colored(val.value, "blue")
     elif val.fttype == T_BOOL:
-        return colored(val.value, 'magenta')
+        return colored(val.value, "magenta")
     elif val.fttype == T_VOID:
         return None
 
@@ -30,7 +30,7 @@ def ftformat(val):
 
 def try_convert_int(inp):
     # Make sure that the input *only* consists of a number (no added spaces..)
-    if not re.match("^[+-]?\d+$", inp):
+    if not re.match(r"^[+-]?\d+$", inp):
         return None
 
     try:
